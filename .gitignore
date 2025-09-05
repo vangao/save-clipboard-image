@@ -1,0 +1,16 @@
+# macOS & Finder
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# Build outputs
+Save Image.app/
+*.dSYM/
+
+# Logs
+*.log
+
+# Editors
+.idea/
+.vscode/
+
