@@ -5,6 +5,10 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g., v0.1.1)"
+        required: false
 
 permissions:
   contents: write
@@ -30,27 +34,71 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "Save Image.app" "Save Image.app.zip"
           ls -lh "Save Image.app.zip"
 
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Save Image ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          body: |
-            Save Clipboard-Image for macOS.
-            - Prebuilt app bundled from this repo at tag ${{ github.ref_name }}
-            - Usage: Right-click Open on first launch (Gatekeeper), or remove quarantine: xattr -dr com.apple.quarantine "~/Applications/Save Image.app"
+      - name: Create DMG with app at top level
+        run: |
+          rm -f "Save Image.dmg"
+          hdiutil create -volname "Save Image" -srcfolder "Save Image.app" -ov -format UDZO "Save Image.dmg"
+          ls -lh "Save Image.dmg"
 
-      - name: Upload asset
+      - name: Get or create release and detect existing assets
+        id: release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const core = require('@actions/core');
+            const ref = context.ref || '';
+            const inputTag = core.getInput('tag');
+            const fromRef = ref.startsWith('refs/tags/') ? ref.replace('refs/tags/','') : '';
+            const tag = inputTag || fromRef;
+            if (!tag) {
+              core.setFailed('No tag provided (supply via workflow_dispatch input or push a tag)');
+              return;
+            }
+            let rel;
+            try {
+              rel = await github.rest.repos.getReleaseByTag({ owner: context.repo.owner, repo: context.repo.repo, tag });
+            } catch (e) {
+              if (e.status === 404) {
+                rel = await github.rest.repos.createRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  tag_name: tag,
+                  name: `Save Image ${tag}`,
+                  draft: false,
+                  prerelease: false,
+                  body: `Save Clipboard-Image for macOS.\n- Prebuilt app bundled from this repo at tag ${tag}\n- Usage: Right-click Open on first launch (Gatekeeper), or remove quarantine: xattr -dr com.apple.quarantine \"~/Applications/Save Image.app\"`,
+                });
+              } else {
+                throw e;
+              }
+            }
+            const data = rel.data;
+            core.setOutput('upload_url', data.upload_url);
+            const assets = Array.isArray(data.assets) ? data.assets : [];
+            const hasZip = assets.some(a => a.name === 'Save Image.app.zip');
+            const hasDmg = assets.some(a => a.name === 'Save Image.dmg');
+            core.setOutput('has_zip', hasZip ? 'true' : 'false');
+            core.setOutput('has_dmg', hasDmg ? 'true' : 'false');
+
+      - name: Upload ZIP asset
+        if: steps.release.outputs.has_zip != 'true'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ steps.release.outputs.upload_url }}
           asset_path: Save Image.app.zip
           asset_name: Save Image.app.zip
           asset_content_type: application/zip
+
+      - name: Upload DMG asset
+        if: steps.release.outputs.has_dmg != 'true'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: Save Image.dmg
+          asset_name: Save Image.dmg
+          asset_content_type: application/x-apple-diskimage
