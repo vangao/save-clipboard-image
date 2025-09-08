@@ -2,6 +2,15 @@
 
 A macOS helper that saves the current clipboard image into the folder shown by the front Finder window (falls back to Desktop) and gives visual feedback. Designed to be added as a Finder toolbar button.
 
+## Quick Start (Prebuilt App)
+- Download: On GitHub, click `Code` → `Download ZIP`, unzip it, and locate `Save Image.app` inside the folder. (Alternatively: `git clone` and use the bundled `Save Image.app`.)
+- Install: Drag `Save Image.app` to `~/Applications`.
+- First launch: Because the app isn’t signed/notarized, macOS may warn that it’s from an unidentified developer.
+  - Easiest: Right‑click `Save Image.app` → `Open` → `Open`.
+  - Advanced: Remove quarantine with `xattr -dr com.apple.quarantine "~/Applications/Save Image.app"`.
+- Add to toolbar: See “Install & Add To Toolbar” below.
+- Use: Follow the steps in “Use” below.
+
 ## What’s Here
 - `src/main.swift`: Swift source that saves the clipboard image.
 - `build.sh`: Builds the self-contained `Save Image.app` bundle.
@@ -34,6 +43,7 @@ A macOS helper that saves the current clipboard image into the folder shown by t
 - No image saved: Ensure an image is on the clipboard; the app will notify if none is found.
 - Wrong folder: Make sure the front Finder window is a real folder (not Recents/Smart folders).
 - No notification: Notifications use AppleScript `display notification`; check Focus/Do Not Disturb.
+- Unidentified developer warning: Right‑click `Save Image.app` → `Open` (or run `xattr -dr com.apple.quarantine "~/Applications/Save Image.app"`).
 
 ## Uninstall
 - Remove from toolbar via Finder → View → Customize Toolbar…
