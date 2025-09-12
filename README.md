@@ -4,7 +4,7 @@ A macOS helper that saves the current clipboard content into the folder shown by
 
 ## Quick Start (Prebuilt App)
 - Direct download: Anyone can use the prebuilt `Save Clipboard.app` on macOS (10.13+) — no build or Xcode required.
-- Download: Get the latest from Releases: https://github.com/vangao/save-clipboard-image/releases/latest (download `Save Clipboard.app.zip`).
+- Download: Get the latest from Releases: https://github.com/vangao/save-clipboard/releases/latest (download `Save Clipboard.app.zip`).
 - Alternatively: `git clone` this repo and use the bundled `Save Clipboard.app`.
 - Install: Unzip if needed, then drag `Save Clipboard.app` to `~/Applications`.
 - First launch: Because the app isn’t signed/notarized, macOS may warn that it’s from an unidentified developer.
