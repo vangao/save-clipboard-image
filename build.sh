@@ -1,7 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="Save Image"
+# Defaults can be overridden via --name and --id, or APP_NAME/ BUNDLE_ID env vars
+APP_NAME=${APP_NAME:-"Save Clipboard"}
+BUNDLE_ID=${BUNDLE_ID:-""}
+
+# Parse simple flags
+while [[ ${1:-} ]]; do
+  case "$1" in
+    --name)
+      APP_NAME="$2"; shift 2 ;;
+    --id)
+      BUNDLE_ID="$2"; shift 2 ;;
+    -h|--help)
+      echo "Usage: $0 [--name \"Save Clipboard\"] [--id local.save-clipboard]";
+      exit 0 ;;
+    *)
+      echo "Unknown argument: $1" >&2; exit 1 ;;
+  esac
+done
+
+# Derive a bundle id if not provided
+if [[ -z "$BUNDLE_ID" ]]; then
+  # lowercase, replace non-alnum with hyphen, collapse repeats
+  suffix=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed -E 's/^-+|-+$//g; s/-+/-/g')
+  BUNDLE_ID="local.${suffix}"
+fi
+
 APP_DIR="$(pwd)/${APP_NAME}.app"
 MACOS_DIR="${APP_DIR}/Contents/MacOS"
 RES_DIR="${APP_DIR}/Contents/Resources"
@@ -17,7 +42,7 @@ swiftc -O -framework AppKit src/main.swift -o "${MACOS_DIR}/${APP_NAME}"
 chmod +x "${MACOS_DIR}/${APP_NAME}"
 
 echo "Writing Info.plist..."
-cat >"${PLIST}" <<'PLIST'
+cat >"${PLIST}" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -25,13 +50,13 @@ cat >"${PLIST}" <<'PLIST'
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>Save Image</string>
+    <string>${APP_NAME}</string>
     <key>CFBundleIdentifier</key>
-    <string>local.save-clipboard-image</string>
+    <string>${BUNDLE_ID}</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>Save Image</string>
+    <string>${APP_NAME}</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -43,7 +68,7 @@ cat >"${PLIST}" <<'PLIST'
     <key>LSUIElement</key>
     <true/>
     <key>NSAppleEventsUsageDescription</key>
-    <string>Used to read the front Finder window path to save your clipboard image.</string>
+    <string>Used to read the front Finder window path to save your clipboard content.</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
 </dict>
@@ -81,4 +106,3 @@ else
 fi
 
 echo "Done: ${APP_DIR}"
-
